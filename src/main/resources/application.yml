@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: tutorhub
+  datasource:
+    url: jdbc:postgresql://localhost:5432/tutorhub
+    username: tutorhub
+    password: secret
+  jpa:
+    hibernate:
+      ddl-auto: validate      # Flyway owns the schema, not Hibernate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+
+management:
+  endpoint:
+    health:
+      show-details: always    # so the health check shows the DB status
+
+logging:
+  level:
+    org.hibernate.SQL: debug
