@@ -1,0 +1,78 @@
+### Create an academy
+POST http://localhost:8080/api/academies
+Content-Type: application/json
+
+{
+  "name": "Bright Minds Academy",
+  "slug": "bright-minds"
+}
+
+### List all academies
+GET http://localhost:8080/api/academies
+
+### Get one academy (use an id that exists)
+GET http://localhost:8080/api/academies/1
+
+### Update an academy
+PUT http://localhost:8080/api/academies/1
+Content-Type: application/json
+
+{
+  "name": "Bright Minds Tutoring"
+}
+
+### Create a course under that academy (set academyId to a real id)
+POST http://localhost:8080/api/courses
+Content-Type: application/json
+
+{
+  "academyId": 1,
+  "title": "SAT Math - Fall 2026",
+  "subject": "Mathematics",
+  "term": "Fall 2026"
+}
+
+### List all courses
+GET http://localhost:8080/api/courses
+
+### List courses for one academy only
+GET http://localhost:8080/api/courses?academyId=1
+
+### Get one course
+GET http://localhost:8080/api/courses/1
+
+### Update a course
+PUT http://localhost:8080/api/courses/1
+Content-Type: application/json
+
+{
+  "title": "SAT Math (Advanced) - Fall 2026",
+  "subject": "Mathematics",
+  "term": "Fall 2026"
+}
+
+### Delete a course
+DELETE http://localhost:8080/api/courses/1
+
+### --- Error cases to see the exception handler in action ---
+
+### 400: validation failure (blank name, bad slug)
+POST http://localhost:8080/api/academies
+Content-Type: application/json
+
+{
+  "name": "",
+  "slug": "Bad Slug!"
+}
+
+### 404: academy that doesn't exist
+GET http://localhost:8080/api/academies/9999
+
+### 409: duplicate slug (run the first create twice)
+POST http://localhost:8080/api/academies
+Content-Type: application/json
+
+{
+  "name": "Another Academy",
+  "slug": "bright-minds"
+}

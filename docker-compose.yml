@@ -2,6 +2,7 @@ services:
   postgres:
     image: postgres:17
     container_name: tutorhub-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: tutorhub
       POSTGRES_USER: tutorhub
