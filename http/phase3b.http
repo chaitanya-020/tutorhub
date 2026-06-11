@@ -1,0 +1,109 @@
+### Register DIRECTOR Maria
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{ "email": "maria2@bright.com", "password": "password123", "displayName": "Maria" }
+
+> {% client.global.set("mariaToken", response.body.token); %}
+
+### Register TUTOR Tom
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{ "email": "tom@bright.com", "password": "password123", "displayName": "Tom" }
+
+> {% client.global.set("tomToken", response.body.token); %}
+
+### Register STUDENT Sara
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{ "email": "sara@bright.com", "password": "password123", "displayName": "Sara" }
+
+> {% client.global.set("saraToken", response.body.token); %}
+
+### Maria creates Academy A (becomes DIRECTOR)
+POST http://localhost:8080/api/academies
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+
+{ "name": "Bright Minds", "slug": "bright-minds" }
+
+> {% client.global.set("academyA", response.body.id); %}
+
+### Maria adds Tom as TUTOR
+POST http://localhost:8080/api/members
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyA}}
+
+{ "email": "tom@bright.com", "role": "TUTOR" }
+
+### Maria adds Sara as STUDENT
+POST http://localhost:8080/api/members
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyA}}
+
+{ "email": "sara@bright.com", "role": "STUDENT" }
+
+### Maria creates Course 1
+POST http://localhost:8080/api/courses
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyA}}
+
+{ "title": "SAT Math", "subject": "Mathematics", "term": "Fall 2026" }
+
+> {% client.global.set("course1", response.body.id); %}
+
+### Maria creates Course 2
+POST http://localhost:8080/api/courses
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyA}}
+
+{ "title": "SAT Verbal", "subject": "English", "term": "Fall 2026" }
+
+> {% client.global.set("course2", response.body.id); %}
+
+### Maria enrolls Sara in Course 1 ONLY
+POST http://localhost:8080/api/courses/{{course1}}/enrollments
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyA}}
+
+{ "studentEmail": "sara@bright.com" }
+
+### Tom (staff) lists courses -> sees BOTH course1 and course2
+GET http://localhost:8080/api/courses
+Authorization: Bearer {{tomToken}}
+X-Academy-Id: {{academyA}}
+
+### Sara (STUDENT) lists courses -> sees ONLY course1
+GET http://localhost:8080/api/courses
+Authorization: Bearer {{saraToken}}
+X-Academy-Id: {{academyA}}
+
+### Sara gets course1 (enrolled) -> 200
+GET http://localhost:8080/api/courses/{{course1}}
+Authorization: Bearer {{saraToken}}
+X-Academy-Id: {{academyA}}
+
+### Sara gets course2 (NOT enrolled) -> 404
+GET http://localhost:8080/api/courses/{{course2}}
+Authorization: Bearer {{saraToken}}
+X-Academy-Id: {{academyA}}
+
+### Tom lists enrollments for course1 -> sees Sara
+GET http://localhost:8080/api/courses/{{course1}}/enrollments
+Authorization: Bearer {{tomToken}}
+X-Academy-Id: {{academyA}}
+
+### Sara (STUDENT) tries to enroll someone -> 403 (students can't manage)
+POST http://localhost:8080/api/courses/{{course1}}/enrollments
+Content-Type: application/json
+Authorization: Bearer {{saraToken}}
+X-Academy-Id: {{academyA}}
+
+{ "studentEmail": "tom@bright.com" }

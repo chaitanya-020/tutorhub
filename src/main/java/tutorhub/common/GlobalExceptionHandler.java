@@ -16,6 +16,9 @@ import java.util.Map;
 /**
  * One place that turns exceptions into tidy JSON responses with the right status
  * code, so controllers never have to think about error formatting.
+ *
+ * Note: @PreAuthorize denials throw AccessDeniedException, which Spring Security
+ * itself turns into 403 in the filter chain (we don't handle it here).
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -24,6 +27,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleNotFound(ResourceNotFoundException ex) {
         ApiError body = ApiError.of(HttpStatus.NOT_FOUND.value(), "Not Found", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiError> handleForbidden(ForbiddenException ex) {
+        ApiError body = ApiError.of(HttpStatus.FORBIDDEN.value(), "Forbidden", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+    }
+
+    @ExceptionHandler(MissingAcademyContextException.class)
+    public ResponseEntity<ApiError> handleMissingTenant(MissingAcademyContextException ex) {
+        ApiError body = ApiError.of(HttpStatus.BAD_REQUEST.value(), "Bad Request", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

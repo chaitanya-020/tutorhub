@@ -1,0 +1,98 @@
+### Register DIRECTOR Maria
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{ "email": "maria2@bright.com", "password": "password123", "displayName": "Maria" }
+
+> {% client.global.set("mariaToken", response.body.token); %}
+
+### Register TUTOR Tom
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{ "email": "tom2@bright.com", "password": "password123", "displayName": "Tom" }
+
+> {% client.global.set("tomToken", response.body.token); %}
+
+### Register Bob (will own a different academy)
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{ "email": "bob2@smart.com", "password": "password123", "displayName": "Bob" }
+
+> {% client.global.set("bobToken", response.body.token); %}
+
+### Maria creates Academy A — she becomes its DIRECTOR
+POST http://localhost:8080/api/academies
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+
+{ "name": "Bright Minds", "slug": "bright-minds-2" }
+
+> {% client.global.set("academyA", response.body.id); %}
+
+### Bob creates Academy B
+POST http://localhost:8080/api/academies
+Content-Type: application/json
+Authorization: Bearer {{bobToken}}
+
+{ "name": "Smart Scholars", "slug": "smart-scholars-2" }
+
+> {% client.global.set("academyB", response.body.id); %}
+
+### Maria adds Tom to Academy A as a TUTOR  -> 201
+POST http://localhost:8080/api/members
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyA}}
+
+{ "email": "tom2@bright.com", "role": "TUTOR" }
+
+### Maria creates a course in Academy A  -> 201
+POST http://localhost:8080/api/courses
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyA}}
+
+{ "title": "SAT Math", "subject": "Mathematics", "term": "Fall 2026" }
+
+> {% client.global.set("courseA", response.body.id); %}
+
+### Tom (TUTOR) reads courses in Academy A  -> 200
+GET http://localhost:8080/api/courses
+Authorization: Bearer {{tomToken}}
+X-Academy-Id: {{academyA}}
+
+### Tom (TUTOR) creates a course  -> 201 (TUTOR may manage courses)
+POST http://localhost:8080/api/courses
+Content-Type: application/json
+Authorization: Bearer {{tomToken}}
+X-Academy-Id: {{academyA}}
+
+{ "title": "SAT Verbal", "subject": "English", "term": "Fall 2026" }
+
+### Tom (TUTOR) tries to add a member  -> 403 (only DIRECTOR/COORDINATOR may)
+POST http://localhost:8080/api/members
+Content-Type: application/json
+Authorization: Bearer {{tomToken}}
+X-Academy-Id: {{academyA}}
+
+{ "email": "bob@smart.com", "role": "STUDENT" }
+
+### CROSS-TENANT: Maria reads Academy B (not a member)  -> 403
+GET http://localhost:8080/api/courses
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyB}}
+
+### CROSS-TENANT: Bob (member of B) reads Academy A's course by id  -> 404
+GET http://localhost:8080/api/courses/{{courseA}}
+Authorization: Bearer {{bobToken}}
+X-Academy-Id: {{academyB}}
+
+### Tenant endpoint with NO academy header  -> 403 (no academy role granted)
+GET http://localhost:8080/api/courses
+Authorization: Bearer {{mariaToken}}
+
+### Maria lists her academies  -> only Academy A
+GET http://localhost:8080/api/academies
+Authorization: Bearer {{mariaToken}}

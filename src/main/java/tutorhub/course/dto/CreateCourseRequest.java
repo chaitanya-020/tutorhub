@@ -1,17 +1,14 @@
 package tutorhub.course.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
- * Note we take academyId (a plain Long), not an Academy object. The client
- * references the parent by id; the service resolves it to a real entity.
+ * The academy is NO LONGER in the body — it comes from the active-academy
+ * context (the X-Academy-Id header), enforced server-side. A client can't
+ * create a course in an academy it doesn't belong to.
  */
 public record CreateCourseRequest(
-
-        @NotNull
-        Long academyId,
 
         @NotBlank @Size(max = 255)
         String title,
