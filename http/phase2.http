@@ -1,0 +1,42 @@
+### Register a new user (captures the returned token)
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "director@brightminds.com",
+  "password": "password123",
+  "displayName": "Maria Director"
+}
+
+> {% client.global.set("token", response.body.token); %}
+
+### Login (also captures the token)
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "director@brightminds.com",
+  "password": "password123"
+}
+
+> {% client.global.set("token", response.body.token); %}
+
+### Who am I? (protected — uses the captured token)
+GET http://localhost:8080/api/auth/me
+Authorization: Bearer {{token}}
+
+### Protected endpoint WITHOUT a token -> 401
+GET http://localhost:8080/api/academies
+
+### Same endpoint WITH the token -> 200
+GET http://localhost:8080/api/academies
+Authorization: Bearer {{token}}
+
+### Wrong password -> 401
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "director@brightminds.com",
+  "password": "wrongpassword"
+}

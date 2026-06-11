@@ -3,9 +3,11 @@ package tutorhub.common;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import tutorhub.auth.EmailAlreadyUsedException;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -13,8 +15,7 @@ import java.util.Map;
 
 /**
  * One place that turns exceptions into tidy JSON responses with the right status
- * code, so controllers never have to think about error formatting. We'll expand
- * this in later phases (e.g. auth and optimistic-lock conflicts).
+ * code, so controllers never have to think about error formatting.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -33,6 +34,19 @@ public class GlobalExceptionHandler {
         ApiError body = new ApiError(Instant.now(), HttpStatus.BAD_REQUEST.value(),
                 "Bad Request", "Validation failed", fieldErrors);
         return ResponseEntity.badRequest().body(body);
+    }
+
+    @ExceptionHandler(EmailAlreadyUsedException.class)
+    public ResponseEntity<ApiError> handleEmailInUse(EmailAlreadyUsedException ex) {
+        ApiError body = ApiError.of(HttpStatus.CONFLICT.value(), "Conflict", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiError> handleAuth(AuthenticationException ex) {
+        ApiError body = ApiError.of(HttpStatus.UNAUTHORIZED.value(), "Unauthorized",
+                "Invalid email or password.");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

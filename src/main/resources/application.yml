@@ -19,6 +19,9 @@ management:
   endpoint:
     health:
       show-details: always    # so the health check shows the DB status
+jwt:
+  secret: ${JWT_SECRET:dev-secret-change-me-to-a-long-random-value-of-at-least-32-bytes-please}
+  expiration-ms: 86400000   # 24 hours
 
 logging:
   level:
