@@ -1,0 +1,132 @@
+### Register Maria (DIRECTOR), Tom (TUTOR), Sara (STUDENT)
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{ "email": "maria@bright.com", "password": "password123", "displayName": "Maria" }
+
+> {% client.global.set("mariaToken", response.body.token); %}
+
+###
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{ "email": "tom@bright.com", "password": "password123", "displayName": "Tom" }
+
+> {% client.global.set("tomToken", response.body.token); %}
+
+###
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{ "email": "sara@bright.com", "password": "password123", "displayName": "Sara" }
+
+> {% client.global.set("saraToken", response.body.token); %}
+
+### Academy + members + course + enrollment
+POST http://localhost:8080/api/academies
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+
+{ "name": "Bright Minds", "slug": "bright-minds" }
+
+> {% client.global.set("academyA", response.body.id); %}
+
+###
+POST http://localhost:8080/api/members
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyA}}
+
+{ "email": "tom@bright.com", "role": "TUTOR" }
+
+###
+POST http://localhost:8080/api/members
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyA}}
+
+{ "email": "sara@bright.com", "role": "STUDENT" }
+
+###
+POST http://localhost:8080/api/courses
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyA}}
+
+{ "title": "SAT Math", "subject": "Mathematics", "term": "Fall 2026" }
+
+> {% client.global.set("course1", response.body.id); %}
+
+###
+POST http://localhost:8080/api/courses/{{course1}}/enrollments
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyA}}
+
+{ "studentEmail": "sara@bright.com" }
+
+### Tom creates an assignment
+POST http://localhost:8080/api/courses/{{course1}}/assignments
+Content-Type: application/json
+Authorization: Bearer {{tomToken}}
+X-Academy-Id: {{academyA}}
+
+{ "title": "Problem Set 1", "instructions": "Q1-10", "dueDate": "2026-12-31T23:59:00Z", "maxScore": 100 }
+
+> {% client.global.set("assignment1", response.body.id); %}
+
+### Sara submits — capture id AND version
+POST http://localhost:8080/api/assignments/{{assignment1}}/submissions
+Content-Type: application/json
+Authorization: Bearer {{saraToken}}
+X-Academy-Id: {{academyA}}
+
+{ "content": "My answers..." }
+
+> {%
+    client.global.set("submission1", response.body.id);
+    client.global.set("subVersion", response.body.version);
+%}
+
+### Tom grades it with the current version -> 200, status GRADED, version bumps to 1
+POST http://localhost:8080/api/assignments/{{assignment1}}/submissions/{{submission1}}/grade
+Content-Type: application/json
+Authorization: Bearer {{tomToken}}
+X-Academy-Id: {{academyA}}
+
+{ "score": 95, "version": {{subVersion}} }
+
+### Tom grades AGAIN with the now-STALE version -> 409 (optimistic lock)
+POST http://localhost:8080/api/assignments/{{assignment1}}/submissions/{{submission1}}/grade
+Content-Type: application/json
+Authorization: Bearer {{tomToken}}
+X-Academy-Id: {{academyA}}
+
+{ "score": 80, "version": {{subVersion}} }
+
+### Sara (STUDENT) tries to grade -> 403
+POST http://localhost:8080/api/assignments/{{assignment1}}/submissions/{{submission1}}/grade
+Content-Type: application/json
+Authorization: Bearer {{saraToken}}
+X-Academy-Id: {{academyA}}
+
+{ "score": 100, "version": 1 }
+
+### Score above maxScore -> 400
+POST http://localhost:8080/api/assignments/{{assignment1}}/submissions/{{submission1}}/grade
+Content-Type: application/json
+Authorization: Bearer {{tomToken}}
+X-Academy-Id: {{academyA}}
+
+{ "score": 999, "version": 1 }
+
+### Paged assignment list -> envelope with content + totalElements
+GET http://localhost:8080/api/courses/{{course1}}/assignments?page=0&size=10&sort=dueDate,desc
+Authorization: Bearer {{tomToken}}
+X-Academy-Id: {{academyA}}
+
+### Paged submission list
+GET http://localhost:8080/api/assignments/{{assignment1}}/submissions?page=0&size=10
+Authorization: Bearer {{tomToken}}
+X-Academy-Id: {{academyA}}
+

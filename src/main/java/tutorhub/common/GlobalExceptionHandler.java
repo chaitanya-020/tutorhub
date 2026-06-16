@@ -3,6 +3,7 @@ package tutorhub.common;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -15,10 +16,8 @@ import java.util.Map;
 
 /**
  * One place that turns exceptions into tidy JSON responses with the right status
- * code, so controllers never have to think about error formatting.
- *
- * Note: @PreAuthorize denials throw AccessDeniedException, which Spring Security
- * itself turns into 403 in the filter chain (we don't handle it here).
+ * code. @PreAuthorize denials throw AccessDeniedException, which Spring Security
+ * itself turns into 403 in the filter chain (not handled here).
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -37,6 +36,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MissingAcademyContextException.class)
     public ResponseEntity<ApiError> handleMissingTenant(MissingAcademyContextException ex) {
+        ApiError body = ApiError.of(HttpStatus.BAD_REQUEST.value(), "Bad Request", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiError> handleBadRequest(BadRequestException ex) {
         ApiError body = ApiError.of(HttpStatus.BAD_REQUEST.value(), "Bad Request", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
@@ -62,6 +67,13 @@ public class GlobalExceptionHandler {
         ApiError body = ApiError.of(HttpStatus.UNAUTHORIZED.value(), "Unauthorized",
                 "Invalid email or password.");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiError> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
+        ApiError body = ApiError.of(HttpStatus.CONFLICT.value(), "Conflict",
+                "This record was modified by someone else. Reload it and try again.");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

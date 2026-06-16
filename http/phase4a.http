@@ -1,0 +1,125 @@
+### Register DIRECTOR Maria
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{ "email": "maria@bright.com", "password": "password123", "displayName": "Maria" }
+
+> {% client.global.set("mariaToken", response.body.token); %}
+
+### Register TUTOR Tom
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{ "email": "tom@bright.com", "password": "password123", "displayName": "Tom" }
+
+> {% client.global.set("tomToken", response.body.token); %}
+
+### Register STUDENT Sara
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{ "email": "sara@bright.com", "password": "password123", "displayName": "Sara" }
+
+> {% client.global.set("saraToken", response.body.token); %}
+
+### Maria creates Academy A
+POST http://localhost:8080/api/academies
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+
+{ "name": "Bright Minds", "slug": "bright-minds" }
+
+> {% client.global.set("academyA", response.body.id); %}
+
+### Add Tom as TUTOR
+POST http://localhost:8080/api/members
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyA}}
+
+{ "email": "tom@bright.com", "role": "TUTOR" }
+
+### Add Sara as STUDENT
+POST http://localhost:8080/api/members
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyA}}
+
+{ "email": "sara@bright.com", "role": "STUDENT" }
+
+### Maria creates a course
+POST http://localhost:8080/api/courses
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyA}}
+
+{ "title": "SAT Math", "subject": "Mathematics", "term": "Fall 2026" }
+
+> {% client.global.set("course1", response.body.id); %}
+
+### Enroll Sara in the course
+POST http://localhost:8080/api/courses/{{course1}}/enrollments
+Content-Type: application/json
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyA}}
+
+{ "studentEmail": "sara@bright.com" }
+
+### Tom (TUTOR) creates an assignment  -> 201
+POST http://localhost:8080/api/courses/{{course1}}/assignments
+Content-Type: application/json
+Authorization: Bearer {{tomToken}}
+X-Academy-Id: {{academyA}}
+
+{ "title": "Problem Set 1", "instructions": "Complete questions 1-10.", "dueDate": "2026-12-31T23:59:00Z", "maxScore": 100 }
+
+> {% client.global.set("assignment1", response.body.id); %}
+
+### Sara (enrolled STUDENT) lists assignments  -> sees Problem Set 1
+GET http://localhost:8080/api/courses/{{course1}}/assignments
+Authorization: Bearer {{saraToken}}
+X-Academy-Id: {{academyA}}
+
+### Sara submits her work  -> 201
+POST http://localhost:8080/api/assignments/{{assignment1}}/submissions
+Content-Type: application/json
+Authorization: Bearer {{saraToken}}
+X-Academy-Id: {{academyA}}
+
+{ "content": "Here are my answers: 1) 42, 2) ..." }
+
+> {% client.global.set("submission1", response.body.id); %}
+
+### Sara lists submissions  -> only her own
+GET http://localhost:8080/api/assignments/{{assignment1}}/submissions
+Authorization: Bearer {{saraToken}}
+X-Academy-Id: {{academyA}}
+
+### Tom (staff) lists submissions  -> sees Sara's
+GET http://localhost:8080/api/assignments/{{assignment1}}/submissions
+Authorization: Bearer {{tomToken}}
+X-Academy-Id: {{academyA}}
+
+### Sara submits again  -> 409 (one submission per student)
+POST http://localhost:8080/api/assignments/{{assignment1}}/submissions
+Content-Type: application/json
+Authorization: Bearer {{saraToken}}
+X-Academy-Id: {{academyA}}
+
+{ "content": "Trying to submit twice" }
+
+### Tom (TUTOR) tries to submit  -> 403 (only students submit)
+POST http://localhost:8080/api/assignments/{{assignment1}}/submissions
+Content-Type: application/json
+Authorization: Bearer {{tomToken}}
+X-Academy-Id: {{academyA}}
+
+{ "content": "Tutors can't submit" }
+
+### Validation: assignment with a PAST due date  -> 400
+POST http://localhost:8080/api/courses/{{course1}}/assignments
+Content-Type: application/json
+Authorization: Bearer {{tomToken}}
+X-Academy-Id: {{academyA}}
+
+{ "title": "Bad", "dueDate": "2020-01-01T00:00:00Z", "maxScore": 100 }
