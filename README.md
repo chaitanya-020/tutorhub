@@ -4,8 +4,11 @@ A multi-tenant REST API for tutoring academies. Each academy manages its own sta
 
 [![CI](https://github.com/chaitanya-020/tutorhub/actions/workflows/ci.yml/badge.svg)](https://github.com/chaitanya-020/tutorhub/actions/workflows/ci.yml)
 
-- **Live API:** _(filled in after deploy)_
-- **Swagger UI:** `<live-url>/swagger-ui.html`
+- **Live API:** https://tutorhub-j2wq.onrender.com
+- **Interactive docs (Swagger UI):** https://tutorhub-j2wq.onrender.com/swagger-ui.html
+- **Health check:** https://tutorhub-j2wq.onrender.com/actuator/health
+
+> Hosted on Render's free tier — the service sleeps after ~15 min of inactivity, so the first request after an idle period takes ~30s to wake.
 
 ---
 
@@ -20,12 +23,21 @@ A multi-tenant REST API for tutoring academies. Each academy manages its own sta
 - **Scheduled email reminders** — a cron job runs hourly, finds assignments due in the next 24 hours, and emails each enrolled student asynchronously.
 - **OpenAPI / Swagger UI** — every endpoint documented, with JWT auth and the academy header wired into the "Try it out" console.
 - **Tested with Testcontainers** — integration tests run against a real PostgreSQL launched in Docker, so the access model is verified end-to-end.
+- **CI/CD** — GitHub Actions runs the full test suite on every push; deployed to Render via Docker.
 
 ---
 
 ## Stack
 
-Java 21 · Spring Boot 3.5 · Spring Security · Spring Data JPA / Hibernate · PostgreSQL 17 · Flyway · JWT (jjwt) · springdoc-openapi · JUnit 5 · Mockito · Testcontainers · Docker · GitHub Actions
+Java 21 · Spring Boot 3.5 · Spring Security · Spring Data JPA / Hibernate · PostgreSQL 17 · Flyway · JWT (jjwt) · springdoc-openapi · JUnit 5 · Mockito · Testcontainers · Docker · GitHub Actions · Render
+
+---
+
+## Swagger UI
+
+![Swagger UI](docs/swagger.png)
+
+The full API is browsable and executable at [`/swagger-ui.html`](https://tutorhub-j2wq.onrender.com/swagger-ui.html). Log in via `POST /api/auth/login`, click **Authorize**, paste the token, and set `X-Academy-Id` on academy-scoped endpoints to exercise them live.
 
 ---
 
@@ -63,6 +75,36 @@ Java 21 · Spring Boot 3.5 · Spring Security · Spring Data JPA / Hibernate · 
 
 ---
 
+## API endpoints
+
+| Group       | Method | Path |
+|-------------|--------|------|
+| Auth        | POST   | `/api/auth/register` |
+| Auth        | POST   | `/api/auth/login` |
+| Auth        | GET    | `/api/auth/me` |
+| Academies   | GET    | `/api/academies` |
+| Academies   | POST   | `/api/academies` |
+| Academies   | GET / PUT / DELETE | `/api/academies/{id}` |
+| Members     | GET    | `/api/members` |
+| Members     | POST   | `/api/members` |
+| Courses     | GET    | `/api/courses` |
+| Courses     | POST   | `/api/courses` |
+| Courses     | GET / PUT / DELETE | `/api/courses/{id}` |
+| Enrollments | GET    | `/api/courses/{courseId}/enrollments` |
+| Enrollments | POST   | `/api/courses/{courseId}/enrollments` |
+| Enrollments | DELETE | `/api/courses/{courseId}/enrollments/{enrollmentId}` |
+| Assignments | GET    | `/api/courses/{courseId}/assignments` |
+| Assignments | POST   | `/api/courses/{courseId}/assignments` |
+| Assignments | GET / PUT / DELETE | `/api/courses/{courseId}/assignments/{assignmentId}` |
+| Submissions | GET    | `/api/assignments/{assignmentId}/submissions` |
+| Submissions | POST   | `/api/assignments/{assignmentId}/submissions` |
+| Submissions | GET    | `/api/assignments/{assignmentId}/submissions/{submissionId}` |
+| Submissions | POST   | `/api/assignments/{assignmentId}/submissions/{submissionId}/grade` |
+
+Full schemas and a live "Try it out" console are at [`/swagger-ui.html`](https://tutorhub-j2wq.onrender.com/swagger-ui.html).
+
+---
+
 ## Running locally
 
 Requires Java 21, Docker, and Maven (or use the included `mvnw`).
@@ -80,18 +122,18 @@ docker compose up -d
 
 ### Environment variables
 
-| Variable          | Default                       | Purpose                              |
-|-------------------|-------------------------------|--------------------------------------|
-| `DB_URL`          | `jdbc:postgresql://localhost:5432/tutorhub` | Database URL              |
-| `DB_USERNAME`     | `tutorhub`                    | DB user                              |
-| `DB_PASSWORD`     | `secret`                      | DB password                          |
-| `JWT_SECRET`      | _(local default in yaml)_     | HMAC secret, ≥32 chars               |
-| `MAIL_HOST`       | `sandbox.smtp.mailtrap.io`    | SMTP host (Mailtrap for dev)         |
-| `MAIL_PORT`       | `2525`                        | SMTP port                            |
-| `MAIL_USERNAME`   | _(empty)_                     | SMTP username                        |
-| `MAIL_PASSWORD`   | _(empty)_                     | SMTP password                        |
-| `MAIL_FROM`       | `noreply@tutorhub.local`      | From address on reminder emails      |
-| `REMINDERS_CRON`  | `0 0 * * * *`                 | When the reminder job runs           |
+| Variable          | Default                                       | Purpose                         |
+|-------------------|-----------------------------------------------|---------------------------------|
+| `DB_URL`          | `jdbc:postgresql://localhost:5432/tutorhub`   | Database URL                    |
+| `DB_USERNAME`     | `tutorhub`                                    | DB user                         |
+| `DB_PASSWORD`     | `secret`                                      | DB password                     |
+| `JWT_SECRET`      | _(none — set in your environment)_            | HMAC secret, >= 32 chars        |
+| `MAIL_HOST`       | `sandbox.smtp.mailtrap.io`                    | SMTP host (Mailtrap for dev)    |
+| `MAIL_PORT`       | `2525`                                        | SMTP port                       |
+| `MAIL_USERNAME`   | _(empty)_                                     | SMTP username                   |
+| `MAIL_PASSWORD`   | _(empty)_                                     | SMTP password                   |
+| `MAIL_FROM`       | `noreply@tutorhub.local`                      | From address on reminder emails |
+| `REMINDERS_CRON`  | `0 0 * * * *`                                 | When the reminder job runs      |
 
 ### Tests
 
@@ -103,22 +145,16 @@ Runs the full suite, including the Testcontainers integration test that boots a 
 
 ---
 
-## API at a glance
+## Scheduled reminders
 
-| Group           | Path                                                      |
-|-----------------|-----------------------------------------------------------|
-| Auth            | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` |
-| Academies       | `POST /api/academies`, `GET /api/academies`, `GET/PUT/DELETE /api/academies/{id}` |
-| Memberships     | `POST /api/members`, `GET /api/members`                   |
-| Courses         | `POST /api/courses`, `GET /api/courses`, `GET /api/courses/{id}` |
-| Enrollments     | `POST /api/courses/{courseId}/enrollments`                |
-| Assignments     | `POST /api/courses/{courseId}/assignments`, `GET ...`     |
-| Submissions     | `POST /api/assignments/{assignmentId}/submissions`, `POST .../grade` |
+A `@Scheduled` job scans hourly for assignments due within the next 24 hours and emails each enrolled student via an `@Async` `JavaMailSender`. A `reminder_sent_at` timestamp on each assignment prevents duplicate emails. In development, emails are captured by a Mailtrap sandbox inbox.
 
-Full schema and "Try it out" console at `/swagger-ui.html`.
+<!-- After capturing the Mailtrap screenshot, save it as docs/mailtrap.png and uncomment:
+![Reminder email in Mailtrap](docs/mailtrap.png)
+-->
 
 ---
 
-## License
+## Author
 
-MIT
+Sai Chaitanya Gelivi
