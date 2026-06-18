@@ -1,0 +1,89 @@
+### 1. Register (or skip if already registered)
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "maria.demo@tutorhub.com",
+  "password": "password123",
+  "displayName": "Maria"
+}
+
+> {%
+    client.global.set("mariaToken", response.body.token);
+%}
+
+### 2. Register a student — IMPORTANT: use a real email you can check in Mailtrap
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "chaitanyagelivi03@gmail.com",
+  "password": "password123",
+  "displayName": "Sara"
+}
+
+### 3. Create an academy
+POST http://localhost:8080/api/academies
+Authorization: Bearer {{mariaToken}}
+Content-Type: application/json
+
+{
+  "name": "Demo Academy",
+  "slug": "demo-academy"
+}
+
+> {%
+    client.global.set("academyId", response.body.id);
+%}
+
+### 4. Add Sara as a STUDENT in the academy
+POST http://localhost:8080/api/members
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyId}}
+Content-Type: application/json
+
+{
+  "email": "chaitanyagelivi03@gmail.com",
+  "role": "STUDENT"
+}
+
+### 5. Create a course
+POST http://localhost:8080/api/courses
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyId}}
+Content-Type: application/json
+
+{
+  "title": "Algebra I",
+  "subject": "Math",
+  "term": "Fall 2026"
+}
+
+> {%
+    client.global.set("courseId", response.body.id);
+%}
+
+### 6. Enroll Sara in the course
+POST http://localhost:8080/api/courses/{{courseId}}/enrollments
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyId}}
+Content-Type: application/json
+
+{
+  "studentEmail": "chaitanyagelivi03@gmail.com"
+}
+
+### 7. Create an assignment due in ~2 hours (within the 24h window)
+###    IMPORTANT: replace dueDate with a real timestamp 2 hours from NOW (UTC, ISO-8601).
+###    Example below assumes current UTC time is roughly 2026-06-17T22:00:00Z.
+POST http://localhost:8080/api/courses/{{courseId}}/assignments
+Authorization: Bearer {{mariaToken}}
+X-Academy-Id: {{academyId}}
+Content-Type: application/json
+
+{
+  "title": "Homework 1",
+  "instructions": "Complete chapter 1 exercises",
+  "dueDate": "2026-06-18T04:37:52Z",
+  "maxScore": 100
+}

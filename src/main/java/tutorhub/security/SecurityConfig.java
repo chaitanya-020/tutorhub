@@ -14,14 +14,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Security rules for the whole app:
- *  - /api/auth/register, /api/auth/login, /actuator/health are public
+ * Security rules:
+ *  - /api/auth/register, /api/auth/login, /actuator/health, and the Swagger/
+ *    OpenAPI endpoints are public
  *  - everything else needs a valid token
- *  - STATELESS sessions; we authenticate per request from the JWT
- *  - filter order: JWT filter (who are you?) then Tenant filter (which academy
- *    are you acting in, and what role do you have there?)
- *
- * @EnableMethodSecurity switches on @PreAuthorize on controller/service methods.
+ *  - STATELESS sessions; per-request JWT auth, then per-academy tenant resolution
  */
 @Configuration
 @EnableWebSecurity
@@ -47,6 +44,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(eh -> eh.authenticationEntryPoint(authenticationEntryPoint))

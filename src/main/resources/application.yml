@@ -1,4 +1,26 @@
+
+tutorhub:
+  mail:
+    from: ${MAIL_FROM:noreply@tutorhub.local}
+  reminders:
+    cron: ${REMINDERS_CRON:0 0 * * * *}   # hourly by default
+
 spring:
+
+  mail:
+    host: ${MAIL_HOST:sandbox.smtp.mailtrap.io}
+    port: ${MAIL_PORT:2525}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+
+
   application:
     name: tutorhub
   datasource:
@@ -20,7 +42,7 @@ management:
     health:
       show-details: always    # so the health check shows the DB status
 jwt:
-  secret: ${JWT_SECRET:dev-secret-change-me-to-a-long-random-value-of-at-least-32-bytes-please}
+  secret: ${JWT_SECRET:}
   expiration-ms: 86400000   # 24 hours
 
 logging:

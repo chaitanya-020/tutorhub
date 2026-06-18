@@ -40,4 +40,11 @@ public class Assignment extends BaseAuditableEntity {
 
     @Column(name = "max_score", nullable = false)
     private Integer maxScore;
+
+    /**
+     * When a due-soon reminder was sent for this assignment. Null until sent;
+     * the reminder job uses this to avoid emailing students twice.
+     */
+    @Column(name = "reminder_sent_at")
+    private Instant reminderSentAt;
 }
