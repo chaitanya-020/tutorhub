@@ -23,4 +23,4 @@ jobs:
       # preinstalled, so no setup step is required — the integration test
       # will start a real Postgres container automatically.
       - name: Build and test
-        run: ./mvnw clean verify -B
+        run: sh ./mvnw clean verify -B
